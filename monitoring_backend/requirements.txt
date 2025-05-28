@@ -1,0 +1,10 @@
+fastapi[all]~=0.115.12
+sqlalchemy~=2.0.41
+alembic~=1.16.1
+python-dotenv~=1.1.0
+passlib[bcrypt]
+python-jose[cryptography]
+pydantic-settings~=2.9.1
+pydantic~=2.11.5
+APScheduler~=3.11.0
+pysnmp~=7.1.20
