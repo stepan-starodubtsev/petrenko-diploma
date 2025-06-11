@@ -1,27 +1,31 @@
 # monitoring_agent_gui/main_gui.py
 import customtkinter as ctk
-import threading  # Для запуску BackgroundWorker в окремому потоці
+import threading
 from typing import List, Dict, Any, Optional
+import platform  # Потрібен для визначення шляху до диска
 
+# Імпортуємо наші модулі
 from config_manager import ConfigManager
-from metric_collector import MetricCollector  # Може знадобитися для отримання шляху до диска
+from metric_collector import MetricCollector
 from background_worker import BackgroundWorker
 
 # Налаштування зовнішнього вигляду CustomTkinter
-ctk.set_appearance_mode("System")  # Може бути "System", "Dark", "Light"
-ctk.set_default_color_theme("blue")  # Або "green", "dark-blue"
+ctk.set_appearance_mode("System")
+ctk.set_default_color_theme("blue")
 
 
+# Клас вікна налаштувань залишається без змін
 class SettingsWindow(ctk.CTkToplevel):
     def __init__(self, master, config_manager: ConfigManager, app_instance):
+        # ... (код SettingsWindow залишається таким же, як у попередньому повідомленні)
         super().__init__(master)
         self.config_manager = config_manager
-        self.app_instance = app_instance  # Головний екземпляр App для оновлення його UI
+        self.app_instance = app_instance
 
         self.title("Налаштування Агента")
         self.geometry("400x300")
-        self.transient(master)  # Вікно буде поверх головного
-        self.grab_set()  # Модальне вікно
+        self.transient(master)
+        self.grab_set()
 
         ctk.CTkLabel(self, text="IP Адреса Сервера:").grid(row=0, column=0, padx=10, pady=10, sticky="w")
         self.server_ip_entry = ctk.CTkEntry(self, width=200)
@@ -56,35 +60,34 @@ class SettingsWindow(ctk.CTkToplevel):
                 "server_port": int(self.server_port_entry.get()),
                 "collection_interval_seconds": int(self.interval_entry.get())
             }
-            # Валідація (базова)
             if not (1 <= new_settings["server_port"] <= 65535):
                 raise ValueError("Порт сервера має бути між 1 та 65535")
-            if not (5 <= new_settings["collection_interval_seconds"] <= 3600):  # Приклад обмежень
+            if not (5 <= new_settings["collection_interval_seconds"] <= 3600):
                 raise ValueError("Інтервал збору має бути між 5 та 3600 секундами")
 
             self.config_manager.update_settings(new_settings)
             print("Налаштування збережено.")
-            if self.app_instance:  # Оновлюємо UI головного вікна
+            if self.app_instance:
                 self.app_instance.update_status_display()
-            self.destroy()  # Закриваємо вікно налаштувань
+            self.destroy()
         except ValueError as e:
-            # Тут можна показати повідомлення про помилку в GUI
             print(f"Помилка збереження налаштувань: {e}")
-            # Можна використати CTkMessagebox або просто CTkLabel з помилкою
             error_label = ctk.CTkLabel(self, text=str(e), text_color="red")
             error_label.grid(row=4, column=0, columnspan=2, pady=5)
-            self.after(3000, error_label.destroy)  # Помилка зникне через 3 секунди
+            self.after(3000, error_label.destroy)
 
 
 class App(ctk.CTk):
     def __init__(self, config_manager: ConfigManager, background_worker: BackgroundWorker):
         super().__init__()
         self.config_manager = config_manager
+        self.metric_collector = MetricCollector()  # Створюємо екземпляр збирача метрик
         self.background_worker = background_worker
-        self.background_worker.on_metrics_collected = self.schedule_gui_metric_update
+        # !!! Змінено: on_metrics_collected тепер не оновлює GUI напряму
+        # self.background_worker.on_metrics_collected = self.schedule_gui_metric_update
 
         self.title("Моніторинг Агент")
-        self.geometry("500x450")  # Збільшив розмір для інформації
+        self.geometry("500x450")
 
         # --- Фрейм для статусу ---
         self.status_frame = ctk.CTkFrame(self)
@@ -94,12 +97,11 @@ class App(ctk.CTk):
         self.agent_id_label.pack(pady=2)
         self.server_url_label = ctk.CTkLabel(self.status_frame, text="Сервер: Завантаження...")
         self.server_url_label.pack(pady=2)
-        self.interval_label = ctk.CTkLabel(self.status_frame, text="Інтервал: Завантаження...")
-        self.interval_label.pack(pady=2)
+        self.interval_label = ctk.CTkLabel(self.status_frame, text="Інтервал відправки: Завантаження...")
         self.worker_status_label = ctk.CTkLabel(self.status_frame, text="Статус воркера: Зупинено", text_color="gray")
         self.worker_status_label.pack(pady=2)
 
-        self.update_status_display()  # Початкове заповнення
+        self.update_status_display()
 
         # --- Фрейм для метрик ---
         self.metrics_frame = ctk.CTkFrame(self)
@@ -112,8 +114,6 @@ class App(ctk.CTk):
         self.ram_label = ctk.CTkLabel(self.metrics_frame, text="RAM Використано: - %", font=("Arial", 14))
         self.ram_label.pack(pady=5, anchor="w", padx=20)
 
-        # Для диска, отримуємо кореневий шлях
-        collector = MetricCollector()  # Тимчасовий екземпляр для отримання шляху
         self.disk_display_path = "C:\\" if platform.system().lower() == "windows" else "/"
         self.disk_label = ctk.CTkLabel(self.metrics_frame, text=f"Диск ({self.disk_display_path}) Використано: - %",
                                        font=("Arial", 14))
@@ -136,47 +136,60 @@ class App(ctk.CTk):
         self.settings_button = ctk.CTkButton(self.control_frame, text="Налаштування", command=self.open_settings_window)
         self.settings_button.pack(side="left", padx=5, expand=True)
 
-        # Обробка закриття вікна
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        # Запускаємо воркер автоматично при старті GUI
+        # Запускаємо воркер та GUI оновлення автоматично
         self.start_worker()
+        self.update_gui_metrics_periodically()  # <--- НОВИЙ ВИКЛИК
 
     def update_status_display(self):
         self.agent_id_label.configure(text=f"Agent ID: {self.config_manager.get_agent_id()}")
         self.server_url_label.configure(text=f"Сервер: {self.config_manager.get_server_url()}")
-        self.interval_label.configure(text=f"Інтервал: {self.config_manager.get_collection_interval()} сек")
+        self.interval_label.configure(text=f"Інтервал відправки: {self.config_manager.get_collection_interval()} сек")
 
-    def schedule_gui_metric_update(self, metrics: List[Dict[str, Any]]):
-        # Цей метод викликається з фонового потоку, тому оновлення GUI
-        # потрібно запланувати в головному потоці Tkinter.
-        self.after(0, self._update_metrics_on_gui, metrics)
-
+    # Метод для форматування uptime (можна винести в окремий utils файл)
     def _format_uptime(self, seconds: float) -> str:
+        # ... (код _format_uptime залишається таким же, як у попередньому повідомленні) ...
         days = int(seconds // (24 * 3600))
         seconds %= (24 * 3600)
         hours = int(seconds // 3600)
         seconds %= 3600
         minutes = int(seconds // 60)
         seconds = int(seconds % 60)
-
         parts = []
         if days > 0: parts.append(f"{days}д")
         if hours > 0: parts.append(f"{hours}г")
         if minutes > 0: parts.append(f"{minutes}хв")
-        if seconds > 0 or not parts: parts.append(f"{seconds}с")  # Показуємо секунди, якщо іншого немає або завжди
+        if seconds > 0 or not parts: parts.append(f"{seconds}с")
         return " ".join(parts)
 
+    # НОВИЙ МЕТОД: Оновлення метрик в GUI з заданим інтервалом
+    def update_gui_metrics_periodically(self):
+        """
+        Збирає метрики ТІЛЬКИ для відображення в GUI і планує свій наступний запуск.
+        """
+        # Збираємо метрики за допомогою нашого collector'а
+        metrics = self.metric_collector.collect_metrics()
+
+        # Оновлюємо лейбли в GUI
+        self._update_metrics_on_gui(metrics)
+
+        # Плануємо наступний виклик цієї ж функції через 1000 мс (1 секунду)
+        # self.after() - це метод Tkinter для запуску функції через певний час
+        # без блокування головного потоку GUI.
+        self.after(1000, self.update_gui_metrics_periodically)
+
     def _update_metrics_on_gui(self, metrics: List[Dict[str, Any]]):
-        # Цей метод вже виконується в головному потоці GUI
+        """
+        Безпосередньо оновлює тексти лейблів в GUI.
+        """
         for metric in metrics:
             key = metric.get("metric_key")
             value_num = metric.get("value_numeric")
-            # value_text = metric.get("value_text") # Якщо потрібно текстові
 
             if key == "system.cpu.utilization" and value_num is not None:
                 self.cpu_label.configure(text=f"CPU: {value_num:.1f} %")
-            elif key == "system.memory.used_percent" and value_num is not None:  # Використовуємо відсоток використання
+            elif key == "system.memory.used_percent" and value_num is not None:
                 self.ram_label.configure(text=f"RAM Використано: {value_num:.1f} %")
             elif key == f"system.disk.used_percent[{self.disk_display_path}]" and value_num is not None:
                 self.disk_label.configure(text=f"Диск ({self.disk_display_path}) Використано: {value_num:.1f} %")
@@ -184,8 +197,9 @@ class App(ctk.CTk):
                 self.uptime_label.configure(text=f"Uptime: {self._format_uptime(value_num)}")
 
     def open_settings_window(self):
+        # ... (як було)
         if hasattr(self, "_settings_window") and self._settings_window.winfo_exists():
-            self._settings_window.focus()  # Якщо вікно вже відкрите, просто фокусуємо
+            self._settings_window.focus()
         else:
             self._settings_window = SettingsWindow(self, self.config_manager, self)
 
@@ -205,15 +219,24 @@ class App(ctk.CTk):
 
     def on_closing(self):
         print("Закриття додатку...")
-        self.stop_worker()  # Зупиняємо воркер перед закриттям
+        self.stop_worker()
         self.destroy()
 
 
 if __name__ == "__main__":
-    import platform  # Потрібно для шляху до диска в App
+    # Створюємо екземпляр MetricCollector тут, щоб передати його в App
+    # Хоча App створює свій власний, щоб уникнути передачі, можна залишити так.
+    cm = ConfigManager()
 
-    config_mgr = ConfigManager()
-    bg_worker = BackgroundWorker(config_manager=config_mgr)
 
-    app = App(config_manager=config_mgr, background_worker=bg_worker)
+    # Callback для BackgroundWorker тепер не потрібен для оновлення GUI,
+    # але може бути корисним для логування або інших дій.
+    def worker_callback(metrics_list):
+        print(f"Background worker has just collected {len(metrics_list)} metrics to be sent.")
+
+
+    # Передаємо callback в BackgroundWorker (опціонально)
+    bg_worker = BackgroundWorker(config_manager=cm, on_metrics_collected=worker_callback)
+
+    app = App(config_manager=cm, background_worker=bg_worker)
     app.mainloop()

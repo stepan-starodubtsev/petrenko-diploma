@@ -1,0 +1,6 @@
+{
+    "agent_id": "19a03b78-1908-4fca-9e63-9ca701df0f40",
+    "server_ip": "127.0.0.1",
+    "server_port": 8000,
+    "collection_interval_seconds": 5
+}

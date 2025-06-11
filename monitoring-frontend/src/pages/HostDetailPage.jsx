@@ -70,50 +70,26 @@ const HostDetailPage = observer(() => {
 
 
     const getMetricDefinitionsForHostType = useCallback((hostType) => {
-        // ... (як у попередньому файлі)
-        if (hostType === 'windows_agent') {
+        if (hostType === 'windows_agent' || hostType === 'ubuntu_agent') {
             return [
-                {key: "system.cpu.utilization", name: "Завантаження CPU", unit: "%"},
-                {key: "system.memory.used_percent", name: "Використано пам'яті (%)", unit: "%"},
-                {key: "system.memory.available_mb", name: "Доступно пам'яті (MB)", unit: "MB"},
-                {key: `system.disk.used_percent[C:\\]`, name: "Використано місця на диску (%) (C:\\)", unit: "%"},
-                {key: "system.uptime_seconds", name: "Час роботи системи", unit: "тривалість"},
-            ];
-        } else if (hostType === 'ubuntu_agent') {
-            return [
-                {key: "system.cpu.utilization", name: "Завантаження CPU", unit: "%"},
-                {key: "system.memory.used_percent", name: "Використано пам'яті (%)", unit: "%"},
-                {key: "system.memory.available_mb", name: "Доступно пам'яті (MB)", unit: "MB"},
-                {key: `system.disk.used_percent[/]`, name: "Використано місця на диску (%) (/)", unit: "%"},
-                {key: "system.uptime_seconds", name: "Час роботи системи", unit: "тривалість"},
+                { key: "system.cpu.utilization", name: "Завантаження CPU", unit: "%" },
+                { key: "system.memory.used_percent", name: "Використано пам'яті (%)", unit: "%" },
+                { key: "system.disk.free_gb", name: "Вільно на диску (/)", unit: "GB" },
+                { key: "system.uptime_seconds", name: "Час роботи системи", unit: "тривалість" },
             ];
         } else if (hostType === 'mikrotik_snmp') {
             return [
-                {key: "mikrotik.system.uptime", name: "Час роботи MikroTik", unit: "тривалість"},
-                {key: "mikrotik.system.memory.used", name: "Використано пам'яті MikroTik", unit: "bytes"},
-                {key: "mikrotik.system.memory.total", name: "Загальна пам'ять MikroTik", unit: "bytes"},
-                {key: "mikrotik.system.cpu.load", name: "Завантаження CPU MikroTik", unit: "%"},
-                {key: "mikrotik.system.cpu.frequency", name: "Частота CPU MikroTik", unit: "MHz"},
-                {
-                    key: "mikrotik.interface.ether1.in.octets",
-                    name: "MikroTik ether1 - Вхідні октети (лічильник)",
-                    unit: "bytes"
-                },
-                {
-                    key: "mikrotik.interface.ether1.out.octets",
-                    name: "MikroTik ether1 - Вихідні октети (лічильник)",
-                    unit: "bytes"
-                },
-                {
-                    key: "mikrotik.interface.ether2.in.octets",
-                    name: "MikroTik ether2 - Вхідні октети (лічильник)",
-                    unit: "bytes"
-                },
-                {
-                    key: "mikrotik.interface.ether2.out.octets",
-                    name: "MikroTik ether2 - Вихідні октети (лічильник)",
-                    unit: "bytes"
-                },
+                { key: "mikrotik.system.uptime", name: "Час роботи MikroTik", unit: "тривалість" },
+                { key: "mikrotik.system.memory.used", name: "Використано пам'яті (байт)", unit: "bytes" },
+                { key: "mikrotik.system.memory.total", name: "Загальна пам'ять (байт)", unit: "bytes" },
+                { key: "mikrotik.system.memory.used_percent", name: "Використано пам'яті (%)", unit: "%" }, // <--- Віртуальна метрика
+                { key: "mikrotik.system.cpu.load", name: "Завантаження CPU", unit: "%" },
+                { key: "mikrotik.interface.ether1.in.octets", name: "ether1 - Вхідні октети", unit: "bytes" },
+                { key: "mikrotik.interface.ether1.out.octets", name: "ether1 - Вихідні октети", unit: "bytes" },
+                { key: "mikrotik.interface.ether1.oper_status", name: "ether1 - Операційний статус", unit: "" }, // <--- Нова метрика
+                { key: "mikrotik.interface.ether2.in.octets", name: "ether2 - Вхідні октети", unit: "bytes" },
+                { key: "mikrotik.interface.ether2.out.octets", name: "ether2 - Вихідні октети", unit: "bytes" },
+                { key: "mikrotik.interface.ether2.oper_status", name: "ether2 - Операційний статус", unit: "" }, // <--- Нова метрика
             ];
         }
         return [];
@@ -122,7 +98,7 @@ const HostDetailPage = observer(() => {
     const getDiskUsedPercentMetricKey = useCallback(() => {
         if (!hostStore.currentHost || !hostStore.currentHost.host_type) return null;
         const definitions = getMetricDefinitionsForHostType(hostStore.currentHost.host_type);
-        const diskMetric = definitions.find(m => m.key.includes("disk.used_percent"));
+        const diskMetric = definitions.find(m => m.key.includes("system.disk.free_gb"));
         return diskMetric ? diskMetric.key : null;
     }, [hostStore.currentHost, getMetricDefinitionsForHostType]);
 
@@ -170,8 +146,8 @@ const HostDetailPage = observer(() => {
                     {
                         stateSetter: setOverviewDiskData,
                         metricKey: diskKey,
-                        title: "Використання Диску",
-                        yAxisLabel: "%",
+                        title: "Вільно на диску (/)",
+                        yAxisLabel: "GB",
                         yDomain: [0, 100]
                     },
                     {

@@ -2,10 +2,10 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any
 from datetime import datetime, timedelta, timezone
 
-from app.db import crud
-from app.db.models.host import Host
-from app.db.models.enums import TriggerStatusEnum, HostAvailabilityStatusEnum
-from app.predefined_data import TRIGGER_TEMPLATES_BY_KEY
+from ..db import crud
+from ..db.models.host import Host
+from ..db.models.enums import TriggerStatusEnum, HostAvailabilityStatusEnum
+from ..predefined_data import TRIGGER_TEMPLATES_BY_KEY
 
 def evaluate_triggers_for_host(db: Session, host: Host) -> Dict[str, Any]:
     if not host.is_monitored or host.availability_status != HostAvailabilityStatusEnum.up:

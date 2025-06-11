@@ -3,7 +3,7 @@ version: '3.8'
 services:
   frontend:
     build:
-      context: ./frontend
+      context: ./monitoring-frontend
       dockerfile: Dockerfile
     ports:
       - "80:80"
@@ -28,10 +28,9 @@ services:
       - ALGORITHM=${ALGORITHM}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
     depends_on:
-      db:
-        condition: service_healthy # Чекаємо, поки БД буде готова
+      - postgres
     networks:
-      - monitoring_network
+      - app
 
   postgres:
     image: postgres:15

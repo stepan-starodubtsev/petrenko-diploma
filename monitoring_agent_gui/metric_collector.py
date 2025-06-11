@@ -43,11 +43,11 @@ class MetricCollector:
             # Disk Usage
             disk_path = "C:\\" if platform.system().lower() == "windows" else "/"
             disk = psutil.disk_usage(disk_path)
-            metrics.append({"metric_key": f"system.disk.total_gb[{disk_path}]",
+            metrics.append({"metric_key": f"system.disk.total_gb",
                             "value_numeric": round(disk.total / (1024 * 1024 * 1024), 2), "timestamp": now_iso})
-            metrics.append({"metric_key": f"system.disk.free_gb[{disk_path}]",
+            metrics.append({"metric_key": f"system.disk.free_gb",
                             "value_numeric": round(disk.free / (1024 * 1024 * 1024), 2), "timestamp": now_iso})
-            metrics.append({"metric_key": f"system.disk.used_percent[{disk_path}]", "value_numeric": disk.percent,
+            metrics.append({"metric_key": f"system.disk.used_percent", "value_numeric": disk.percent,
                             "timestamp": now_iso})
         except Exception as e:
             print(f"Error collecting disk metrics for {disk_path}: {e}")

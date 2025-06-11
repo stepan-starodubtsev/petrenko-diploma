@@ -1,6 +1,5 @@
-// src/components/layout/NavBar.jsx
-import React, {useContext} from 'react';
-import {NavLink, Link as RouterLink, useNavigate} from 'react-router-dom';
+import React from 'react';
+import {Link as RouterLink, NavLink, useNavigate} from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -12,7 +11,6 @@ import DashboardIcon from '@mui/icons-material/Dashboard'; // Іконка дл�
 import DnsRoundedIcon from '@mui/icons-material/DnsRounded'; // Іконка для хостів
 import PendingActionsIcon from '@mui/icons-material/PendingActions'; // Іконка для агентів в очікуванні
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
-import authStore from "../../stores/authStore.js";
 import {useStores} from "../../stores/index.js"; // Іконка для проблем
 
 const navItems = [

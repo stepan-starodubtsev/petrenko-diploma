@@ -14,3 +14,14 @@ from .crud_trigger_config import (
     create_trigger_config, update_trigger_config, update_trigger_status,
     delete_trigger_config, get_problem_trigger_configs
 )
+
+from . import crud_user
+from . import crud_host
+from . import crud_metric_data
+from . import crud_trigger_config
+
+# (Опціонально) Створюємо зручні аліаси для коротшого доступу
+user = crud_user
+host = crud_host
+metric_data = crud_metric_data
+trigger_config = crud_trigger_config

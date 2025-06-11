@@ -8,22 +8,33 @@ from app.api.api_v1 import deps
 from app.db import crud
 from app.schemas import host as host_schema
 
+from app.services import host_service
+
 router = APIRouter()
 
+
 @router.post("/", response_model=host_schema.HostRead, status_code=status.HTTP_201_CREATED)
-def create_host(host: host_schema.HostCreate, db: Session = Depends(deps.get_db)):
+def create_host(
+        host: host_schema.HostCreate,
+        db: Session = Depends(deps.get_db),
+        # current_user: UserModel = Depends(deps.get_current_active_user) # Поверни, коли буде аутентифікація
+):
     """
-    Створити новий хост (зазвичай для SNMP або вручну).
-    Агенти реєструються через інший ендпоінт.
+    Створити новий хост (для SNMP або додавання агента вручну).
+    Автоматично створює набір тригерів за замовчуванням для цього типу хоста.
     """
-    db_host_by_name = crud.crud_host.get_host_by_name(db, name=host.name)
+    db_host_by_name = crud.host.get_host_by_name(db, name=host.name)
     if db_host_by_name:
         raise HTTPException(status_code=400, detail=f"Host with name '{host.name}' already exists.")
-    if host.unique_agent_id:
-        db_host_by_agent_id = crud.crud_host.get_host_by_agent_id(db, unique_agent_id=host.unique_agent_id)
-        if db_host_by_agent_id:
-             raise HTTPException(status_code=400, detail=f"Host with agent ID '{host.unique_agent_id}' already exists.")
-    return crud.crud_host.create_host(db=db, host_in=host)
+
+    # Викликаємо сервісну функцію замість прямого виклику CRUD
+    try:
+        new_host = host_service.create_host_with_triggers(db=db, host_in=host)
+        return new_host
+    except Exception as e:
+        # Обробка можливих помилок зі створення тригерів
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"An error occurred while creating host and triggers: {e}")
 
 @router.get("/", response_model=List[host_schema.HostRead])
 def read_hosts(

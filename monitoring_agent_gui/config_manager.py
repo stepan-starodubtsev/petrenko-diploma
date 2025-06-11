@@ -6,7 +6,7 @@ from typing import Dict, Any
 CONFIG_FILENAME = "agent_config.json"
 DEFAULT_SERVER_IP = "127.0.0.1"
 DEFAULT_SERVER_PORT = 8000
-DEFAULT_COLLECTION_INTERVAL = 60
+DEFAULT_COLLECTION_INTERVAL = 5
 
 
 class ConfigManager:
