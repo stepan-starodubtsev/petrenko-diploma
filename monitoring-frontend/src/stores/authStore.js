@@ -1,83 +1,89 @@
 // src/stores/authStore.js
 import { makeAutoObservable, runInAction } from "mobx";
-import * as api from '../services/apiService'; // Припускаємо, що тут буде функція login
+import * as api from '../services/apiService';
+import { jwtDecode } from 'jwt-decode'; // Потрібно встановити: npm install jwt-decode
 
 class AuthStore {
-    isAuthenticated = false;
-    user = null; // Може зберігати ім'я користувача або інші дані
+    token = localStorage.getItem('accessToken') || null;
+    user = null; // Буде містити { username, role }
     isLoading = false;
     error = null;
 
     constructor(rootStore) {
         makeAutoObservable(this, {}, { autoBind: true });
         this.rootStore = rootStore;
-        this.checkAuthStatus(); // Перевіряємо статус при завантаженні
-    }
-
-    checkAuthStatus() {
-        // Для MVP просто перевіряємо localStorage
-        const storedAuth = localStorage.getItem('isAuthenticated');
-        const storedUser = localStorage.getItem('username');
-        if (storedAuth === 'true' && storedUser) {
-            this.isAuthenticated = true;
-            this.user = { username: storedUser };
-        } else {
-            this.isAuthenticated = false;
-            this.user = null;
+        if (this.token) {
+            this.decodeAndSetUserFromToken(this.token);
         }
     }
 
-    // Імітація логіну
+    // Computed властивості для зручності
+    get isAuthenticated() {
+        return !!this.token;
+    }
+
+    get isAdmin() {
+        return this.user?.role === 'admin';
+    }
+
+    decodeAndSetUserFromToken(token) {
+        try {
+            const decoded = jwtDecode(token);
+            this.user = {
+                username: decoded.sub, // 'sub' - це username
+                role: decoded.role // 'role' - роль, яку ми додали на бекенді
+            };
+            this.token = token;
+        } catch (error) {
+            console.error("Failed to decode token:", error);
+            this.logout(); // Якщо токен невалідний, виходимо з системи
+        }
+    }
+
     async login(username, password) {
         this.isLoading = true;
         this.error = null;
         try {
-            // TODO: Замінити на реальний виклик apiService.loginUser(username, password),
-            // який повертатиме токен та, можливо, дані користувача.
-            // Зараз просто імітуємо успіх, якщо username не порожній.
-            if (!username || !password) {
-                throw new Error("Ім'я користувача та пароль не можуть бути порожніми.");
-            }
-
-            // Тут мав би бути виклик до бекенду:
-            // const response = await api.loginUser(username, password);
-            // localStorage.setItem('accessToken', response.access_token);
-            // Потім можна було б завантажити дані користувача через /users/me/
-            // await this.fetchCurrentUser(); // (потрібно буде створити цей метод)
-
-            // Тимчасова імітація:
-            await new Promise(resolve => setTimeout(resolve, 500)); // Імітація затримки мережі
-
-            localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('username', username);
+            const response = await api.loginUser(username, password);
+            localStorage.setItem('accessToken', response.access_token);
 
             runInAction(() => {
-                this.isAuthenticated = true;
-                this.user = { username: username }; // Зберігаємо ім'я користувача
+                this.decodeAndSetUserFromToken(response.access_token);
                 this.isLoading = false;
             });
-            return true; // Успіх
+            return true;
         } catch (error) {
             console.error("Login attempt failed:", error);
             runInAction(() => {
-                this.error = error.message || "Помилка входу";
+                this.error = error.response?.data?.detail || "Помилка входу. Перевірте логін та пароль.";
                 this.isLoading = false;
-                this.isAuthenticated = false;
-                this.user = null;
             });
-            return false; // Невдача
+            return false;
         }
     }
 
     logout() {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('username');
-        localStorage.removeItem('accessToken'); // Якщо використовується токен
+        localStorage.removeItem('accessToken');
         runInAction(() => {
-            this.isAuthenticated = false;
+            this.token = null;
             this.user = null;
         });
     }
+
+    // async fetchCurrentUser() { // Можна використовувати для оновлення даних користувача
+    //     if (!this.token) return;
+    //     this.isLoading = true;
+    //     try {
+    //         const userData = await api.getCurrentUser();
+    //         runInAction(() => {
+    //             this.user = { ...this.user, ...userData }; // Оновлюємо дані користувача
+    //             this.isLoading = false;
+    //         });
+    //     } catch (error) {
+    //         console.error("Failed to fetch current user", error);
+    //         this.logout(); // Якщо токен невалідний
+    //     }
+    // }
 }
 
 export default AuthStore;

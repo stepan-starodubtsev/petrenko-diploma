@@ -12,6 +12,8 @@ from app.db import crud  # Припускаємо, що crud_user імпорту
 from app.db.models.user import User as UserModel  # Даємо аліас моделі
 from app.schemas.user import TokenData  # Якщо використовуєш TokenData
 
+from app.db.models import UserRoleEnum
+
 # OAuth2PasswordBearer вказує на URL ендпоінта для отримання токена
 # Важливо, щоб цей URL був повним шляхом відносно кореня API, 
 # якщо app.include_router(..., prefix="/api/v1")
@@ -59,4 +61,15 @@ async def get_current_active_user(
 ) -> UserModel:
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
+
+
+async def get_current_active_admin(
+    current_user: UserModel = Depends(get_current_active_user),
+) -> UserModel:
+    if current_user.role != UserRoleEnum.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user doesn't have enough privileges",
+        )
     return current_user

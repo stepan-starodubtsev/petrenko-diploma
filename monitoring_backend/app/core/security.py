@@ -7,6 +7,8 @@ from passlib.context import CryptContext
 
 from app.core.config import settings
 
+from app.db.models import UserRoleEnum
+
 # Налаштування для хешування паролів
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -14,8 +16,11 @@ ALGORITHM = settings.ALGORITHM
 SECRET_KEY = settings.SECRET_KEY
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
+
 def create_access_token(
-    subject: Union[str, Any], expires_delta: Optional[timedelta] = None
+        subject: Union[str, Any],
+        user_role: UserRoleEnum,  # <--- ДОДАНО: Передаємо роль користувача
+        expires_delta: Optional[timedelta] = None
 ) -> str:
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -23,7 +28,10 @@ def create_access_token(
         expire = datetime.now(timezone.utc) + timedelta(
             minutes=ACCESS_TOKEN_EXPIRE_MINUTES
         )
-    to_encode = {"exp": expire, "sub": str(subject)} # "sub" - це "subject" токена (зазвичай username або user_id)
+
+    # Додаємо роль до "корисного навантаження" (payload) токена
+    to_encode = {"exp": expire, "sub": str(subject), "role": user_role.value}  # <--- ДОДАНО "role"
+
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 

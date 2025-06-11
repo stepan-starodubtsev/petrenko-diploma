@@ -8,6 +8,7 @@ from app.db import crud
 from app.schemas import agent as agent_schema
 from app.schemas import host as host_schema
 from app.services import agent_service
+from app.schemas import user as user_schema
 
 router = APIRouter()
 
@@ -17,7 +18,7 @@ def submit_agent_data(
         unique_agent_id: str,
         payload: agent_schema.AgentDataPayload,
         request: Request,
-        db: Session = Depends(deps.get_db)
+        db: Session = Depends(deps.get_db),
 ) -> Dict[str, Any]:
     """
     Ендпоінт для агентів для надсилання даних метрик.
@@ -37,7 +38,8 @@ def submit_agent_data(
 
 
 @router.get("/pending/", response_model=List[host_schema.HostRead], summary="List agents pending approval")
-def list_pending_agents(skip: int = 0, limit: int = 100, db: Session = Depends(deps.get_db)):
+def list_pending_agents(skip: int = 0, limit: int = 100, db: Session = Depends(deps.get_db),
+        current_user: user_schema.UserRead = Depends(deps.get_current_active_user)):
     """
     Отримати список хостів-агентів, які очікують на схвалення адміністратором.
     ПОПЕРЕДЖЕННЯ: Цей ендпоінт має бути захищений (тільки для адмінів) в майбутньому.
@@ -51,7 +53,8 @@ def list_pending_agents(skip: int = 0, limit: int = 100, db: Session = Depends(d
 def approve_agent(
         unique_agent_id: str,
         approval_data: host_schema.HostApproveData,
-        db: Session = Depends(deps.get_db)
+        db: Session = Depends(deps.get_db),
+        current_user: user_schema.UserRead = Depends(deps.get_current_active_user)
 ):
     """
     Схвалити агента, що очікує.

@@ -11,6 +11,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard'; // Іконка дл�
 import DnsRoundedIcon from '@mui/icons-material/DnsRounded'; // Іконка для хостів
 import PendingActionsIcon from '@mui/icons-material/PendingActions'; // Іконка для агентів в очікуванні
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
+import PeopleOutline from '@mui/icons-material/PeopleOutline';
 import {useStores} from "../../stores/index.js"; // Іконка для проблем
 
 const navItems = [
@@ -25,6 +26,14 @@ const navItems = [
         label: 'Активні Проблеми',
         path: '/problems',
         icon: <ReportProblemOutlinedIcon sx={{mr: 0.7, fontSize: '1.1rem'}}/>
+    },
+];
+
+const adminNavItems = [ // Навігація тільки для адмінів
+    {
+        label: 'Управління Користувачами',
+        path: '/admin/users',
+        icon: <PeopleOutline sx={{mr: 0.7, fontSize: '1.1rem'}}/>
     },
 ];
 
@@ -121,11 +130,47 @@ function NavBar() {
                                 {item.label}
                             </Button>
                         ))}
+                        {authStore.isAdmin && adminNavItems.map((item) => (
+                            <Button
+                                key={item.label}
+                                component={NavLink}
+                                to={item.path}
+                                sx={(isActive) => ({ // NavLink передає об'єкт { isActive, isPending }
+                                    my: 2,
+                                    mx: 0.5, // Зменшив горизонтальний відступ
+                                    color: 'white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: '6px 12px',
+                                    textTransform: 'none', // Якщо не потрібні великі літери
+                                    fontSize: '0.9rem',
+                                    borderBottom: isActive ? '3px solid #fff' : '3px solid transparent', // Активне посилання
+                                    borderRadius: 0, // Прибираємо заокруглення для ефекту вкладки
+                                    transition: 'border-color 0.2s ease-in-out, background-color 0.2s ease-in-out',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                                        borderBottomColor: isActive ? '#fff' : 'rgba(255, 255, 255, 0.5)'
+                                    },
+                                })}
+                            >
+                                {item.icon}
+                                {item.label}
+                            </Button>
+                        ))}
                     </Box>
 
-                    <Box sx={{flexGrow: 0}}>
-                        <Button color="inherit" onClick={handleLogout}>Logout</Button>
-                    </Box>
+                    <Box sx={{ flexGrow: 0 }}>
+                    {authStore.isAuthenticated ? (
+                        <>
+                            <Typography component="span" sx={{ mr: 2, color: 'white' }}>
+                                Вітаємо, {authStore.user?.username}!
+                            </Typography>
+                            <Button color="inherit" onClick={handleLogout}>Вийти</Button>
+                        </>
+                    ) : (
+                        <Button color="inherit" component={RouterLink} to="/login">Увійти</Button>
+                    )}
+                </Box>
                 </Toolbar>
             </Container>
         </AppBar>

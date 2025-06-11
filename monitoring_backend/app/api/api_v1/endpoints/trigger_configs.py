@@ -6,6 +6,7 @@ import uuid
 from app.db import crud
 from app.schemas import trigger_config as tc_schema
 from app.api.api_v1 import deps
+from app.schemas import user as user_schema
 
 router = APIRouter()
 
@@ -13,7 +14,8 @@ router = APIRouter()
 def create_trigger_config_for_host(
     host_id: uuid.UUID,
     trigger_config_in: tc_schema.TriggerConfigCreateForHost,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
+        current_user: user_schema.UserRead = Depends(deps.get_current_active_user)
 ):
     db_host = crud.crud_host.get_host(db, host_id=host_id)
     if db_host is None:
@@ -28,7 +30,8 @@ def create_trigger_config_for_host(
 def read_trigger_configs_for_host(
     host_id: uuid.UUID,
     skip: int = 0, limit: int = 100,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
+        current_user: user_schema.UserRead = Depends(deps.get_current_active_user)
 ):
 
     db_host = crud.crud_host.get_host(db, host_id=host_id)
@@ -37,7 +40,8 @@ def read_trigger_configs_for_host(
     return crud.crud_trigger_config.get_trigger_configs_by_host(db, host_id=host_id, skip=skip, limit=limit)
 
 @router.get("/trigger-configs/{trigger_config_id}", response_model=tc_schema.TriggerConfigRead)
-def read_trigger_config(trigger_config_id: uuid.UUID, db: Session = Depends(deps.get_db)):
+def read_trigger_config(trigger_config_id: uuid.UUID, db: Session = Depends(deps.get_db),
+        current_user: user_schema.UserRead = Depends(deps.get_current_active_user)):
 
     db_trigger_config = crud.crud_trigger_config.get_trigger_config(db, trigger_config_id=trigger_config_id)
     if db_trigger_config is None:
@@ -48,7 +52,8 @@ def read_trigger_config(trigger_config_id: uuid.UUID, db: Session = Depends(deps
 def update_trigger_config(
     trigger_config_id: uuid.UUID,
     trigger_config_in: tc_schema.TriggerConfigUpdate,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
+        current_user: user_schema.UserRead = Depends(deps.get_current_active_user)
 ):
 
     db_trigger_config = crud.crud_trigger_config.get_trigger_config(db, trigger_config_id=trigger_config_id)
@@ -57,7 +62,8 @@ def update_trigger_config(
     return crud.crud_trigger_config.update_trigger_config(db=db, db_trigger_config=db_trigger_config, trigger_config_in=trigger_config_in)
 
 @router.delete("/trigger-configs/{trigger_config_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_trigger_config(trigger_config_id: uuid.UUID, db: Session = Depends(deps.get_db)):
+def delete_trigger_config(trigger_config_id: uuid.UUID, db: Session = Depends(deps.get_db),
+        current_user: user_schema.UserRead = Depends(deps.get_current_active_user)):
 
     db_trigger_config = crud.crud_trigger_config.delete_trigger_config(db, trigger_config_id=trigger_config_id)
     if db_trigger_config is None: # crud.delete повертає об'єкт, якщо він був видалений, або None
@@ -67,7 +73,8 @@ def delete_trigger_config(trigger_config_id: uuid.UUID, db: Session = Depends(de
 @router.get("/problems/", response_model=List[tc_schema.TriggerConfigRead], summary="List all active problems")
 def list_active_problems(
     skip: int = 0, limit: int = 100,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
+        current_user: user_schema.UserRead = Depends(deps.get_current_active_user)
 ):
 
     return crud.crud_trigger_config.get_problem_trigger_configs(db, skip=skip, limit=limit)

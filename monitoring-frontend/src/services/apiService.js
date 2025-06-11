@@ -260,3 +260,23 @@ export const getActiveProblems = async (skip = 0, limit = 100) => {
         throw error;
     }
 };
+
+export const updateUser = async (userId, userData) => {
+    try {
+        const response = await apiClient.put(`/auth/users/${userId}`, userData);
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating user ${userId}:`, error.response ? error.response.data : error.message);
+        throw error;
+    }
+};
+
+export const deleteUser = async (userId) => {
+    try {
+        const response = await apiClient.delete(`/auth/users/${userId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error deleting user ${userId}:`, error.response ? error.response.data : error.message);
+        throw error;
+    }
+};

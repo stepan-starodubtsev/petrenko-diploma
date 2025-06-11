@@ -1,10 +1,11 @@
 // src/stores/index.js
-import React, { createContext, useContext } from 'react';
+import React, {createContext, useContext} from 'react';
 import UiStore from './uiStore';
 import HostStore from './hostStore'; // <--- Перевір цей імпорт
 import MetricStore from './metricStore';
 import TriggerStore from './triggerStore';
 import AuthStore from "./authStore.js";
+import UserStore from "./userStore.js";
 
 export class RootStore {
     constructor() {
@@ -13,6 +14,7 @@ export class RootStore {
         this.metricStore = new MetricStore(this);
         this.triggerStore = new TriggerStore(this);
         this.authStore = new AuthStore(this); // <--- Створюємо екземпляр AuthStore
+        this.userStore = new UserStore(this);
     }
 }
 

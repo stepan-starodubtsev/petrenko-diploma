@@ -7,6 +7,7 @@ from datetime import datetime
 from app.db import crud
 from app.schemas import metric_data as metric_schema
 from app.api.api_v1 import deps
+from app.schemas import user as user_schema
 
 router = APIRouter()
 
@@ -18,7 +19,8 @@ def read_metric_data_for_host(
     end_time: Optional[datetime] = Query(None, description="Кінцевий час для вибірки (ISO формат)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(1000, ge=1, le=5000),
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
+        current_user: user_schema.UserRead = Depends(deps.get_current_active_user)
 ):
     db_host = crud.crud_host.get_host(db, host_id=host_id)
     if db_host is None:
